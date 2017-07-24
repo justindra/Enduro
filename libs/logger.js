@@ -1,6 +1,6 @@
 // * ———————————————————————————————————————————————————————— * //
-// * 	Kiska Logger
-// *	Enables nicer console logging for enduro
+// * 	logger
+// *	enables nicer console logging for enduro
 // * ———————————————————————————————————————————————————————— * //
 var logger = function () {}
 
@@ -22,7 +22,7 @@ var logtags_config = {
 	nice_dev_init: true,
 	enduro_events: true,
 	enduro_render_events: false,
-	admin_api_calls: true,
+	admin_api_calls: false,
 	admin_login: false,
 	file_uploading: true,
 	render_debug: true,
@@ -86,6 +86,10 @@ logger.prototype.end = function (logtag) {
 logger.prototype.timestamp = function (message, logtag) {
 	if (!pass_tagcheck(logtag)) { return }
 	log('[' + chalk(get_timestamp()) + '] ' + message)
+}
+
+logger.prototype.centerlog = function (message, newline, logtag) {
+	this.log(cpad(message, FRAME_WIDTH - 4), newline, logtag)
 }
 
 // * ———————————————————————————————————————————————————————— * //
@@ -218,13 +222,14 @@ function lpad (s, len, c) {
 
 // Pads the string with whitespace to the right
 function rpad (text, length) {
-	return text + rep(length - text.length, ' ')
+	return text + rep(length - clear_ansi_style(text).length, ' ')
 }
 
 // Pads and aligns the string with specified character to center
-function cpad (s, length, char) {
-	var prev = Math.floor((length - s.length) / 2)
-	return rep(prev, char) + s + rep(length - prev - s.length, char)
+function cpad (text, length, char) {
+	var text_length = clear_ansi_style(text).length
+	var prev = Math.floor((length - text_length) / 2)
+	return rep(prev, char) + text + rep(length - prev - text_length, char)
 }
 
 // Returns string of length @len consisting of characters @char
@@ -232,6 +237,10 @@ function rep (len, char) {
 	return len > 0
 		? Array(len + 1).join(char || ' ')
 		: ''
+}
+
+function clear_ansi_style (text) {
+	return text.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '')
 }
 
 module.exports = new logger()

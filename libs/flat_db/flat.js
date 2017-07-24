@@ -88,6 +88,7 @@ flat.prototype.load = function (filename) {
 				try {
 					flatObj = require_from_string('module.exports = ' + raw_context_data)
 				} catch (e) {
+					console.log(e)
 					log_clusters.log('malformed_context_file', filename)
 				}
 
@@ -132,7 +133,7 @@ flat.prototype.flat_object_exists = function (flat_object_path) {
 // *	@param {object} context_to_update - object to be merged with current context
 // *	@return {object} - returns merged object
 // * ———————————————————————————————————————————————————————— * //
-flat.prototype.update = function (flat_object_path, context_to_update) {
+flat.prototype.upsert = function (flat_object_path, context_to_update) {
 	var self = this
 
 	return self.load(flat_object_path)
@@ -159,7 +160,7 @@ flat.prototype.is_generator = function (flat_object_path) {
 // * 	returns a relative http url from flat_object_path
 // *	for example: `generators/blog/blog_entry` will result in `blog/blog_entry`
 // *	@param {string} flat_object_path - path to file without extension, relative to flat folder
-// *	@return {string} - returns relative url to the file
+// *	@return {string} - returns relative url that will serve this flat object
 // * ———————————————————————————————————————————————————————— * //
 flat.prototype.url_from_filename = function (flat_object_path) {
 	if (flat_object_path == 'index') {
@@ -167,12 +168,31 @@ flat.prototype.url_from_filename = function (flat_object_path) {
 	}
 
 	if (this.is_generator(flat_object_path)) {
-		var temp_path = flat_object_path.split('/').slice(1);
-		temp_path.push('index');
-		return temp_path.join('/');
+		var temp_path = flat_object_path.split('/').slice(1)
+		return temp_path.join('/')
 	}
 
 	return flat_object_path
+}
+
+// * ———————————————————————————————————————————————————————— * //
+// * 	returns a relative path to the file actually being served when flat object is requested
+// *	for example: `generators/blog/blog_entry` will result in `blog/blog_entry/index.html`
+// *	@param {string} flat_object_path - path to file without extension, relative to flat folder
+// *	@return {string} - returns relative url to the file
+// * ———————————————————————————————————————————————————————— * //
+flat.prototype.filepath_from_filename = function (flat_object_path) {
+	if (flat_object_path == 'index') {
+		return 'index'
+	}
+
+	if (this.is_generator(flat_object_path)) {
+		var temp_path = flat_object_path.split('/').slice(1)
+		temp_path.push('index')
+		return temp_path.join('/')
+	}
+
+	return path.join(flat_object_path, 'index')
 }
 
 // * ———————————————————————————————————————————————————————— * //

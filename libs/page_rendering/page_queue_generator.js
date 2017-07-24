@@ -10,7 +10,6 @@ var glob = require('glob-promise')
 var path = require('path')
 
 // local dependencies
-var babel = require(enduro.enduro_path + '/libs/babel/babel')
 var flat = require(enduro.enduro_path + '/libs/flat_db/flat')
 
 // Renders individual files
@@ -21,15 +20,7 @@ page_queue_generator.prototype.generate_pagelist = function () {
 	return new Promise(function (resolve, reject) {
 
 		// Reads the culture config file and gets cultures and sets them to the global enduro.config.cultures variable
-		babel.get_cultures()
-			.then((cultures) => {
-
-				// save current cultures
-				enduro.config.cultures = cultures
-
-				// gets all the pages
-				return self.get_all_pages()
-			})
+		self.get_all_pages()
 			.then((files) => {
 
 				var all_pages_to_render = []
@@ -89,26 +80,25 @@ page_queue_generator.prototype.add_generator_pages = function (pages_to_render, 
 
 	// fetch all context files from folder of the same name as the template name
 	return glob(path.join(enduro.project_path, 'cms', page_context.context_file, '**/*.js'))
-	.then((files) => {
+		.then((files) => {
 
-		// iterate found context files and add them to the provided list
-		for (f in files) {
+			// iterate found context files and add them to the provided list
+			for (f in files) {
 
-			// clone the generator object
-			context_clone = JSON.parse(JSON.stringify(page_context))
+				// clone the generator object
+				context_clone = JSON.parse(JSON.stringify(page_context))
 
-			// path to new context file
-			context_clone.context_file = flat.get_cms_filename_from_fullpath(files[f])
+				// path to new context file
+				context_clone.context_file = flat.get_cms_filename_from_fullpath(files[f])
 
-			// sets new destination path, removing the /generator from the path
-			context_clone.destination_path =
-			context_clone.destination_path = flat.url_from_filename(context_clone.context_file)
+				// sets new destination path, removing the /generator from the path
+				context_clone.destination_path = flat.filepath_from_filename(context_clone.context_file)
 
-			// push to provided page list
-			pages_to_render.push(context_clone)
-		}
+				// push to provided page list
+				pages_to_render.push(context_clone)
+			}
 
-	})
+		})
 }
 
 page_queue_generator.prototype.get_all_pages = function () {

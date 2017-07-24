@@ -5,22 +5,24 @@
 var theme_manager = function () {}
 
 // local dependencies
-var flat_helpers = require(enduro.enduro_path + '/libs/flat_db/flat_helpers')
-var flat = require(enduro.enduro_path + '/libs/flat_db/flat')
-var logger = require(enduro.enduro_path + '/libs/logger')
-var admin_security = require(enduro.enduro_path + '/libs/admin_utilities/admin_security')
-var format_service = require(enduro.enduro_path + '/libs/services/format_service')
+const flat_helpers = require(enduro.enduro_path + '/libs/flat_db/flat_helpers')
+const flat = require(enduro.enduro_path + '/libs/flat_db/flat')
+const logger = require(enduro.enduro_path + '/libs/logger')
+const admin_security = require(enduro.enduro_path + '/libs/admin_utilities/admin_security')
+const format_service = require(enduro.enduro_path + '/libs/services/format_service')
+const enduro_instance = require(enduro.enduro_path + '/index')
 
 // vendor dependencies
-var Promise = require('bluebird')
-var request = require('request-promise')
-var zlib = require('zlib')
-var tar = require('tar')
-var inquirer = require('inquirer')
-var fs = Promise.promisifyAll(require('fs-extra'))
-var npm = require('npm')
-var opn = require('opn')
-var _ = require('lodash')
+const Promise = require('bluebird')
+const request = require('request-promise')
+const zlib = require('zlib')
+const tar = require('tar')
+const inquirer = require('inquirer')
+const fs = Promise.promisifyAll(require('fs-extra'))
+const npm = require('npm')
+const opn = require('opn')
+const _ = require('lodash')
+const path = require('path')
 
 var theme_manager_api_routes = {
 	get_theme_by_name: 'http://www.endurojs.com/theme_manager/get_theme_by_name',
@@ -151,8 +153,12 @@ theme_manager.prototype.create_from_theme = function (theme_name) {
 		.then(() => {
 			logger.loading('starting enduro')
 			logger.silent()
-			return enduro.actions.start()
+			return enduro_instance.init(path.join(process.cwd(), theme_progress_variables.answers.project_name))
 
+		}, theme_error)
+
+		.then(() => {
+			return enduro.actions.start()
 		}, theme_error)
 
 		.then(() => {
@@ -188,6 +194,9 @@ theme_manager.prototype.create_from_theme = function (theme_name) {
 // * ———————————————————————————————————————————————————————— * //
 theme_manager.prototype.get_all_themes = function () {
 	return request(theme_manager_api_routes.get_all_themes)
+		.then((all_themes_as_string) => {
+			return JSON.parse(all_themes_as_string)
+		})
 }
 
 // * ———————————————————————————————————————————————————————— * //
@@ -198,13 +207,26 @@ theme_manager.prototype.get_all_themes = function () {
 // *	@return {Promise} - promise with theme info as context
 // * ———————————————————————————————————————————————————————— * //
 theme_manager.prototype.fetch_theme_info_by_name = function (theme_name, options) {
+	const self = this
 
 	// list all themes and exit if specified theme is not found
 	if (!theme_name) {
-		logger.log('you have to specify theme name. Try:')
-		logger.tablog('$ enduro theme mirror')
-		logger.end()
-		return Promise.reject()
+
+		return self.get_all_themes()
+			.then((all_themes) => {
+				return inquirer.prompt([
+					{
+						name: 'theme_name',
+						message: 'choose a theme',
+						type: 'list',
+						default: 'mirror',
+						choices: all_themes.map((theme) => { return theme.name }),
+					},
+				])
+			})
+			.then((theme) => {
+				return self.fetch_theme_info_by_name(theme.theme_name)
+			})
 	}
 
 	logger.loading('getting info for \'' + theme_name + '\' theme')
@@ -286,7 +308,7 @@ theme_manager.prototype.list_themes = function (themes) {
 // *	@return {promise} - empty promise
 // * ———————————————————————————————————————————————————————— * //
 theme_manager.prototype.clean_fresh_theme = function () {
-	return flat.update('.settings', { settings: { login_message: '' }})
+	return flat.upsert('.settings', { settings: { login_message: '' }})
 		.then(() => {
 			return admin_security.remove_all_users()
 		})
