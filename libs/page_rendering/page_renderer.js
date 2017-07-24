@@ -91,7 +91,6 @@ page_renderer.prototype.render_file_by_context = function (template_path, contex
 
 			// Add pagename to the context
 			extend(true, context, {_meta: {pagename: pagename, culture: culture}})
-
 			// adds in-cms networking
 			globalizer.globalize(context)
 

@@ -2,7 +2,7 @@
 var less = require('gulp-less');
 var sourcemaps = require('gulp-sourcemaps');
 var LessAutoPrefix = require('less-plugin-autoprefix');
-var autoprefixer = new LessAutoPrefix({ browsers: [ 'last 5 versions' ] });
+var autoprefixer = new LessAutoPrefix({ browsers: [ '> 5%' ] });
 
 // local dependencies
 var logger = require(enduro.enduro_path + '/libs/logger');
@@ -25,7 +25,6 @@ less_handler.prototype.init = function (gulp, browser_sync) {
 	gulp.task(less_handler_task_name, function () {
 
 		logger.timestamp('Less compiling started', 'enduro_events');
-
 		return gulp.src(enduro.project_path + '/assets/css/*.less')
 			.pipe(sourcemaps.init())
 			.pipe(less({
